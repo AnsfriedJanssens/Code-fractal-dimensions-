@@ -1,0 +1,370 @@
+function vector=Boxdim()
+n=1;
+y_0=0.001;
+sequence_vector=zeros(1,n+1);
+sequence_vector(1)=y_0;
+
+%%%%%%%%%%%%%%%%%%% VARIABLES CODE 1: Liénard Equations %%%%%%%%%%%%%%%%%%%
+power=3;
+coefficient=10;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%% VARIABLES CODE 2: Two-Stroke Oscillator %%%%%%%%%%%%%%%%%
+%a=1;
+%g=10;
+%d=1;
+%b=a*g*d;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%% VARIABLES CODE 3: Leslie-Gower Predator-Prey System %%%%%%%%%%%
+%%%%Conditions: sqrt(h)>c and 1+c-2*sqrt(h)>0%%%%
+%c=0.8;
+%h=0.7;
+
+%%%%For A=0 we need%%%%
+%h=(1/32)*(9*c^2-(c-1)*(17*c^2+46*c+1)^(0.5)+22*c+1)
+%b=(1+c-2*sqrt(h))/(sqrt(h)-c);
+
+%%%%Calculate A%%%%
+%numerator=-c^2-3*c+c*(h)^(0.5)-(h)^(0.5)+4*h;
+%denominator_1=1-c-2*(h)^(0.5);
+%denominator_2=((h)^(0.5)-c)^2;
+%A=numerator/(denominator_1*denominator_2)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%% VARIABLES CODE 4: General Contact Order and Singularity Order %%%%%%
+%%%%%CONDITIONS:%%%%
+%   - m is odd
+%   - n_even is even and m<=2*(n-1)
+%   - j=0,1,2,3,...
+%   - a=-2,-1,0,1,2,...
+%   - b=1 or b=-1
+
+%m=9
+%n_even=10
+%j=10;
+%a=2;
+%b=1;
+%contact_point=0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% CODE 5 NEEDS TO BE REMOVED  AS ITS EXAMPLE ISN'T IN THE PAPER
+%%%%%%%%%%%%%%%%%%%%%%%%% VARIABLES CODE 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%CONDITIONS:%%%%
+%   - m is odd
+%   - n_odd is odd and m<=2*(n-1)??
+%   - j=0,1,2,3,...
+%   - a=...,-3,-2,-1,1,2,3,...
+%   - b=-1 if a<0 and b=1 if a>0
+
+%m=15;
+%n_odd=5;
+%j=3;
+%a=1;
+%b=1;
+%contact_point=0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+for i=1:1:n
+    %CODE 1
+    y_1=sequence(y_0,power,coefficient);
+    
+    %CODE 2
+    %y_1=sequence_beta(y_0,a,g,d,b);
+    
+    %CODE 3
+    %y_1=sequence_prey(y_0,c,h,b);
+    
+    %CODE 4
+    %y_1=sequence_m_n_even_j(y_0,m,n_even,j,a,b,contact_point);
+    
+    %CODE 5
+    %y_1=sequence_m_n_odd_j(y_0,m,n_odd,j,a,b,contact_point);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%% FOR ALL CODES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    sequence_vector(i+1)=y_1;
+    y_0=y_1;
+    i
+end
+
+%%%% CODE 1 %%%%
+sequence_vector
+
+%%%% CODE 2 %%%%
+%sequence_vector=sequence_vector-d
+
+%%%% CODE 3 %%%%
+%sequence_vector
+%sequence_vector=-(sequence_vector-((1+c-2*sqrt(h))/b))
+%A
+
+%%%% CODE 4 %%%%
+%sequence_vector=abs(sequence_vector)
+
+%%%% CODE 5 %%%%
+%sequence_vector=abs(sequence_vector)
+
+Boxdim=zeros(1,3);
+%Method 1
+Boxdim(1)=log(n)/(-log(sequence_vector(n)-sequence_vector(n+1)));
+%Method 2
+Boxdim(2)=1/(1-(log(sequence_vector(n+1))/log(n)));
+%Method 3
+Boxdim(3)=1-(log(n*(sequence_vector(n)-sequence_vector(n+1))+sequence_vector(n))/(log((sequence_vector(n)-sequence_vector(n+1))/2)));
+Boxdim
+end
+
+function sequence=sequence(y_0,power,coefficient)
+syms x y
+F(x)=x^2+coefficient*x^(power);
+
+% F is polynomial, so we can put it in a matrix to solve the equation
+matrix=zeros(1,power+1);
+matrix(power+1)=-y_0;
+matrix(1)=coefficient;
+matrix(power-1)=1;
+oplossing=roots(matrix);
+
+%Search the closest solution 
+contact_point=0;
+alpha=500;
+for i=1:1:length(oplossing)
+    if imag(oplossing(i))==0
+        if oplossing(i)<contact_point && abs(oplossing(i)-contact_point)<abs(alpha-contact_point)
+            alpha=oplossing(i);
+        end
+    end  
+end
+% As F=x^2+cx^macht is, the integraal has the following form:
+alpha_solution=((coefficient)^2*(power)^2)/(2*power-2)*alpha^(2*power-2)+4*coefficient*alpha^(power)+2*alpha^2;
+matrix=zeros(1,2*power-1);
+matrix(1)=((coefficient)^2*(power)^2)/(2*power-2);
+matrix(power-1)=4*coefficient;
+matrix(2*power-3)=2;
+matrix(2*power-1)=-alpha_solution;
+divergence_integral=roots(matrix);
+
+%Search y_1
+for i=1:1:length(divergence_integral)
+    if imag(divergence_integral(i))==0 && abs(divergence_integral(i)-alpha)>0.0000000000000001
+        y_1=F(divergence_integral(i));
+    end
+end 
+sequence=y_1;
+end
+
+function sequence_beta=sequence_beta(y_0,a,g,d,b)
+contact_point=a*d;
+alpha=500;
+
+syms x(t) y(t) 
+A = [0 1; -1 a];
+Y = [x; y];
+odes = diff(Y) == A*Y;
+[xSol(t),ySol(t)] = dsolve(odes);
+xSol(t) = simplify(xSol(t));
+ySol(t) = simplify(xSol(t));
+C = Y(0) == [contact_point;y_0];
+[xSol(t),ySol(t)] = dsolve(odes,C);
+tijd=vpasolve(ySol(t)==d,t,[-50 0]);
+omega=xSol(tijd);
+double(omega);
+
+%Itegral of x-a*d is of the form: (x^2)/2-a*d*x
+omega_solution=(omega^2)/2-contact_point*omega;
+matrix=zeros(1,3);
+matrix(1)=1/2;
+matrix(2)=-contact_point;
+matrix(3)=-omega_solution;
+divergence_integral=roots(matrix);
+
+for i=1:1:length(divergence_integral)
+    if imag(divergence_integral(i))==0
+        if divergence_integral(i)>contact_point && abs(divergence_integral(i)-contact_point)<abs(alpha-divergence_integral(i));
+            alpha=divergence_integral(i);
+        end
+    end  
+end
+
+%Berekenen van y_1
+%solution of integral dy/dx=-x/y+a
+%syms x y
+%F(x,y)=log(x)+0.5*log((-a*x*y+x^2+y^2)/x^2)+a*atan((2*y/x-a)/sqrt(4-a^2))/sqrt(4-a^2);
+%F(contact_punt,y)-F(alpha,d)
+%F(contact_punt,y)-F(alpha,d);
+%sequence_beta=vpasolve(F(contact_point,y)-F(alpha,d),y,[d y_0]);
+
+syms x(t) y(t) 
+A = [0 1; -1 a];
+Y = [x; y];
+odes = diff(Y) == A*Y;
+[xSol(t),ySol(t)] = dsolve(odes);
+xSol(t) = simplify(xSol(t));
+ySol(t) = simplify(xSol(t));
+C = Y(0) == [alpha;d];
+[xSol(t),ySol(t)] = dsolve(odes,C);
+tijd=vpasolve(xSol(t)==contact_point,t);
+sequence_beta=ySol(tijd);
+end
+
+function sequence_prey=sequence_prey(y_0,c,h,b)
+contact_point=sqrt(h)-c;
+syms x y
+F(x)=(1/b)*(1-x-(h)/(c+x));
+afglF(x)=(1/b)*(-1+h/(c+x)^2);
+afglf(x,y)=-4*x^3+3*(1-c)*x^2+2*(c-h)*x-b*c*2*x*y-b*3*x^2*y;
+g(x,y)=y*(c+x)*(x-y);
+divergence(x)=afglf(x,F(x))*(afglF(x)/g(x,F(x)));
+
+%Search ALPHA
+alpha_vector=vpasolve(F(x)==y_0,x);
+for i=1:1:length(alpha_vector)
+    if imag(alpha_vector(i))==0
+        if alpha_vector(i)<contact_point;
+            alpha=alpha_vector(i);
+        end
+        if alpha_vector(i)>contact_point
+           previous_omega=alpha_vector(i);
+        end
+    end  
+end
+
+
+
+
+%steps=1000;
+%Trapoziode rule for n=10 to calulate surface from alpha to sqrt(h)-c: number of steps=1000
+%alpha_step=(contact_point-alpha)/(steps-2);
+%x_value_alpha=alpha:alpha_step:sqrt(h)-c;
+%x_value_alpha=divergence(x_value_alpha);
+%x_value_alpha(1)=x_value_alpha(1)/2;
+%x_value_alpha(length(x_value_alpha))=x_value_alpha(length(x_value_alpha))/2;
+%alpha_surface=((sqrt(h)-c-alpha)/steps)*sum(x_value_alpha);
+
+
+%Trapoziode rule for n=10 to calulate surface from sqrt(h)-c to omega: number of steps=10
+%x=omega
+%steps=25;
+%syms x
+%omega_sum(x)=0*x;
+%omega_step(x)=(x-contact_point)/(steps-1);
+%for i=1:1:steps-2
+%    omega_sum(x)=omega_sum(x)+divergence(i*omega_step(x)+contact_point);
+%end
+%omega_surface(x)=((x-contact_point)/steps)*(0.5*divergence(contact_point)+0.5*divergence(x)+omega_sum(x))+alpha_surface
+
+
+%tic
+%omega_vector=vpasolve(omega_surface(x)==0,[contact_point contact_point+2*(contact_point-alpha)])
+%toc
+%if length(omega_vector)==0 
+%    omega_vector=solve(omega_surface(x)==0,contact_point<x, x<contact_point+2*(contact_point-alpha))
+%end
+%if max(omega_vector)>previous_omega
+%    tic
+%    omega=max(solve(omega_surface(x)==0,contact_point<x, x<previous_omega))
+%    toc
+%else
+%    omega=max(omega_vector)
+%end
+
+syms x
+integral(x)=int(divergence(x));
+%opp_alpha=divergence(alpha)*(contact_point-alpha)/2;
+opp_alpha=double(integral(contact_point)-integral(alpha));
+%opp_alpha=real(double(integral(contact_point)-integral(alpha)))
+opp_omega(x)=divergence(x)*(x-contact_point)/2;
+%opp_omega(x)=integral(x)-integral(contact_point)
+omega_vector=double(real(solve(opp_omega(x)+opp_alpha==0,x)));
+
+
+for i=1:1:length(omega_vector)
+    if omega_vector(i)>contact_point && omega_vector(i)<previous_omega
+        omega=omega_vector(i);
+    end
+end
+omega
+
+sequence_prey=double(F(omega));
+
+end
+
+function sequence_m_n_even_j=sequence_m_n_even_j(y_0,m,n_even,j,a,b,contact_point)
+%variables
+n=n_even;
+
+%functions
+syms x 
+f(x)=a*x^n;
+dervf(x)=a*n*x^(n-1);
+g(x)=b*x^m+a*x^(m+2*j+1);
+divergence(x)=-((dervf(x))^2)/g(x);
+integral(x)=int(partfrac(divergence(x),x));
+
+%Search ALPHA
+alpha_vector=vpasolve(f(x)==y_0,x);
+for i=1:1:length(alpha_vector)
+    if imag(alpha_vector(i))==0 && a*b<0
+        if alpha_vector(i)<contact_point
+            alpha=alpha_vector(i);
+        end
+        if alpha_vector(i)>contact_point
+           previous_omega=alpha_vector(i);
+           interval=[0 previous_omega];
+        end
+    end  
+    if imag(alpha_vector(i))==0 && a*b>0
+        if alpha_vector(i)>contact_point
+            alpha=alpha_vector(i);
+        end
+        if alpha_vector(i)<contact_point
+           previous_omega=alpha_vector(i);
+           interval=[previous_omega 0];
+        end
+    end  
+end
+solution(x)=integral(x)-integral(alpha);
+omega=vpasolve(solution(x)==0,x,interval)
+
+sequence_m_n_even_j=f(omega);
+end
+
+function sequence_m_n_odd_j=sequence_m_n_odd_j(y_0,m,n_odd,j,a,b,contact_point)
+%variables
+n=n_odd;
+
+%functions
+syms x 
+f(x)=a*x^n;
+dervf(x)=a*n*x^(n-1);
+g(x)=b*x^m+a*x^(m+2*j+1);
+divergence(x)=-((dervf(x))^2)/g(x)
+integral(x)=int(partfrac(divergence(x),x))
+
+%Search ALPHA
+alpha_vector=vpasolve(f(x)==y_0,x)
+for i=1:1:length(alpha_vector)
+    if imag(alpha_vector(i))==0
+        if alpha_vector(i)<contact_point
+            alpha=alpha_vector(i);
+            interval=[0 -alpha];
+        end
+        if alpha_vector(i)>contact_point
+            alpha=alpha_vector(i);
+            interval=[-alpha 0]
+        end
+    end
+end
+%Calculate divergence integral & OMEGA
+solution(x)=integral(x)-integral(alpha)
+solve(solution(x)==0,x)
+omega=vpasolve(solution(x)==0,x,interval)
+
+sequence_m_n_odd_j=-f(omega);
+end
+
+
