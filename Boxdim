@@ -166,7 +166,6 @@ sequence_beta=ySol(tijd);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% CODE 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 function sequence_m_n_even_j=sequence_m_n_even_j(y_0,m,n_even,j,a,b,contact_point)
 %variables
 n=n_even;
